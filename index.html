@@ -274,15 +274,6 @@
       </div>
     </div>
 
-    <div class="admin-link">
-      <button onclick="toggleAdmin()">Lihat Senarai Pendaftaran (Admin)</button>
-    </div>
-
-    <div class="card" id="adminCard" style="display:none;">
-      <h2>Senarai Pendaftaran</h2>
-      <div id="adminList" style="font-size:12.5px; margin-top:10px;">Memuatkan...</div>
-    </div>
-
   </div>
 
   <div class="footer-note">
@@ -292,7 +283,7 @@
   </div>
 
 <script>
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzGtozUW3Yzs3fXdepbVputQawLS_sD8QLSa4T1PwihhJM16F-m5Is8nxrwK-V4rJ3l4A/exec';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxmzcziLSWLCtf3f-lwOt5z-fPQIY_TaOLrHP3OJqXZNSf1M2sBk8ibsRjdLfjgFrP0A/exec';
 
   const form = document.getElementById('regForm');
   const submitBtn = document.getElementById('submitBtn');
@@ -339,79 +330,52 @@
     submitBtn.textContent = 'MENGHANTAR...';
 
     try {
-      const key = 'reg:' + Date.now() + ':' + Math.random().toString(36).slice(2, 7);
-      const result = await window.storage.set(key, JSON.stringify(registration), true);
-      if (!result) throw new Error('Storage failed');
-
-      // Send to Google Sheet via Apps Script webhook
-      try {
-        await fetch(GAS_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(registration)
-        });
-      } catch (gasErr) {
-        console.error('Google Sheet sync failed:', gasErr);
-        // Don't block success even if sheet sync fails - data is safe in storage
-      }
+      submitViaIframe(registration);
 
       const waMsg = encodeURIComponent(
         `Salam, saya ${registration.fullName} (IC: ${registration.icNumber}) baru sahaja daftar untuk HEAR ME RISING 2026. Rujukan bayaran: ${registration.paymentRef}. Saya sertakan gambar resit di sini.`
       );
       document.getElementById('waLink').href = `https://wa.me/60197575364?text=${waMsg}`;
 
-      form.style.display = 'none';
-      document.getElementById('successBox').style.display = 'block';
+      setTimeout(() => {
+        form.style.display = 'none';
+        document.getElementById('successBox').style.display = 'block';
+      }, 800);
     } catch (err) {
-      alert('Maaf, ralat berlaku. Sila cuba lagi. (' + err.message + ')');
+      alert('Maaf, ralat berlaku. Sila cuba lagi.');
       submitBtn.disabled = false;
       submitBtn.textContent = 'HANTAR PENDAFTARAN';
     }
   });
 
-  let adminVisible = false;
-  async function toggleAdmin() {
-    adminVisible = !adminVisible;
-    const adminCard = document.getElementById('adminCard');
-    adminCard.style.display = adminVisible ? 'block' : 'none';
-    if (!adminVisible) return;
-
-    const listDiv = document.getElementById('adminList');
-    listDiv.textContent = 'Memuatkan...';
-
-    try {
-      const listResult = await window.storage.list('reg:', true);
-      const keys = listResult && listResult.keys ? listResult.keys : [];
-      if (keys.length === 0) {
-        listDiv.textContent = 'Belum ada pendaftaran lagi.';
-        return;
-      }
-      let rows = [];
-      for (const k of keys) {
-        try {
-          const r = await window.storage.get(k, true);
-          if (r && r.value) rows.push(JSON.parse(r.value));
-        } catch (e) {}
-      }
-      rows.sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
-
-      listDiv.innerHTML = `<div style="margin-bottom:8px; font-weight:600;">Jumlah: ${rows.length} / 25 peserta</div>` +
-        rows.map((r, i) => `
-          <div style="border-bottom:1px solid #eee; padding:8px 0;">
-            <b>${i+1}. ${r.fullName}</b> (${r.age} thn)<br>
-            IC: ${r.icNumber} | Tel: ${r.phone}<br>
-            ${r.memberStatus}<br>
-            Alat: ${r.deviceType}<br>
-            Waris: ${r.emergencyName} (${r.emergencyPhone})<br>
-            Bayaran: ${r.payMethod || '-'} | Ruj: ${r.paymentRef || '-'}
-          </div>
-        `).join('');
-    } catch (err) {
-      listDiv.textContent = 'Ralat memuat senarai: ' + err.message;
+  function submitViaIframe(payload) {
+    const iframeName = 'hidden_submit_frame';
+    let iframe = document.getElementById(iframeName);
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.name = iframeName;
+      iframe.id = iframeName;
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
     }
+
+    const tempForm = document.createElement('form');
+    tempForm.action = GAS_URL;
+    tempForm.method = 'POST';
+    tempForm.target = iframeName;
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'payload';
+    input.value = JSON.stringify(payload);
+    tempForm.appendChild(input);
+
+    document.body.appendChild(tempForm);
+    tempForm.submit();
+    document.body.removeChild(tempForm);
   }
 </script>
+
 
 </body>
 </html>
