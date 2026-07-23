@@ -223,6 +223,31 @@
         <label>Keperluan Aksesibiliti / Diet Khas (jika ada)</label>
         <textarea id="accessNeeds" rows="2" placeholder="cth: memerlukan jurubahasa BIM, alahan makanan, dll"></textarea>
 
+        <div style="margin-top:22px; padding-top:16px; border-top:2px dashed #d4af37;">
+          <h2 style="margin-bottom:10px;">Surat Pelepasan (Majikan/Sekolah/Universiti)</h2>
+          <div class="note" style="margin:0 0 12px 10px;">HEAR ME akan sediakan surat pelepasan rasmi untuk anda serahkan kepada majikan/sekolah/universiti bagi tujuan permohonan cuti/kebenaran menghadiri program ini.</div>
+
+          <label>Status Semasa <span class="req">*</span></label>
+          <select id="currentStatus" required>
+            <option value="">-- Pilih --</option>
+            <option>Bekerja</option>
+            <option>Pelajar Sekolah</option>
+            <option>Pelajar Universiti/Kolej</option>
+            <option>Tidak Bekerja / Tiada Berkaitan</option>
+          </select>
+
+          <div id="employerFields" style="display:none;">
+            <label>Nama Majikan / Sekolah / Universiti <span class="req">*</span></label>
+            <input type="text" id="employerName" placeholder="cth: Kolej Melaka / Syarikat ABC Sdn Bhd">
+
+            <label>Alamat Majikan / Sekolah / Universiti <span class="req">*</span></label>
+            <textarea id="employerAddress" rows="2" placeholder="Alamat penuh untuk tujuan surat rasmi"></textarea>
+
+            <label>Nama Penyelia / Guru Kelas / Dekan (jika berkaitan)</label>
+            <input type="text" id="supervisorName" placeholder="Untuk dialamatkan dalam surat (pilihan)">
+          </div>
+        </div>
+
         <label>Dari mana anda tahu tentang program ini?</label>
         <select id="source">
           <option value="">-- Pilih --</option>
@@ -297,6 +322,20 @@
     });
   });
 
+  const currentStatusSelect = document.getElementById('currentStatus');
+  const employerFields = document.getElementById('employerFields');
+  const employerNameInput = document.getElementById('employerName');
+  const employerAddressInput = document.getElementById('employerAddress');
+
+  currentStatusSelect.addEventListener('change', () => {
+    const needsEmployer = currentStatusSelect.value === 'Bekerja' ||
+      currentStatusSelect.value === 'Pelajar Sekolah' ||
+      currentStatusSelect.value === 'Pelajar Universiti/Kolej';
+    employerFields.style.display = needsEmployer ? 'block' : 'none';
+    employerNameInput.required = needsEmployer;
+    employerAddressInput.required = needsEmployer;
+  });
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -320,6 +359,10 @@
       emergencyName: document.getElementById('emergencyName').value,
       emergencyPhone: document.getElementById('emergencyPhone').value,
       accessNeeds: document.getElementById('accessNeeds').value,
+      currentStatus: document.getElementById('currentStatus').value,
+      employerName: document.getElementById('employerName').value,
+      employerAddress: document.getElementById('employerAddress').value,
+      supervisorName: document.getElementById('supervisorName').value,
       source: document.getElementById('source').value,
       payMethod: document.getElementById('payMethod').value,
       paymentRef: document.getElementById('paymentRef').value,
